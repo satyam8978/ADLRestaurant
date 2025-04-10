@@ -1,0 +1,41 @@
+﻿@page
+@model ADLRestaurant.Pages.Tables.IndexModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Manage Tables";
+}
+
+<h2 class="mb-3">Manage Tables</h2>
+
+<!-- Add New Table -->
+<form method="post" class="row g-3 mb-4">
+    <div class="col-md-6">
+        <input asp-for="NewTableName" class="form-control" placeholder="Enter table name" required />
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-success">Add Table</button>
+    </div>
+</form>
+
+<!-- Show Table List -->
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Table Name</th>
+            <th style="width: 100px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var t in Model.TableList)
+        {
+            <tr>
+                <td>@t.TableName</td>
+                <td>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@t.TableId" onsubmit="return confirm('Are you sure to delete?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
