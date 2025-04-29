@@ -19,7 +19,8 @@
             @foreach (var order in Model.OngoingOrders)
             {
                 <div class="col-md-4">
-                    <div class="card shadow rounded-4 border-0" style="background-color: #f8f9fa;">
+                    <div class="card shadow rounded-4 border-0 h-100" style="background-color: #f8f9fa; cursor: pointer;"
+                         onclick="window.location.href='@Url.Page("/Orders/AddItems", new { id = order.OrderId, tableId = order.tableid })'">
                         <div class="card-body d-flex flex-column">
                             <h4 class="card-title text-center fw-bold mb-3">@order.TableName</h4>
 
@@ -34,14 +35,21 @@
                             </div>
 
                             <div class="mt-auto">
-                                <a class="btn btn-outline-primary w-100 mb-2" asp-page="/Orders/AddItems" asp-route-id="@order.OrderId" asp-route-tableId="@order.tableid">
-                                    ➕ Add Items
-                                </a>
-                                <form method="post" asp-page-handler="Complete" asp-route-id="@order.OrderId">
-                                    <button type="submit" class="btn btn-success w-100">
+                                <div class="d-grid gap-2">
+
+                                    <a class="btn btn-outline-primary"
+                                       href="@Url.Page("/Orders/OrderPrint", "DownloadPdf", new { orderIds = order.OrderId })"
+                                       target="_blank"
+                                       onclick="event.stopPropagation()">
+                                        🖨️ Print
+                                    </a>
+
+                                    <a class="btn btn-success"
+                                       href="@Url.Page("/Orders/OrderSummary", new { id = order.OrderId })"
+                                       onclick="event.stopPropagation()">
                                         ✅ Complete Order
-                                    </button>
-                                </form>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -67,7 +75,6 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-
                     <div class="mb-3">
                         <label class="form-label fw-bold">Select Table</label>
                         <select asp-for="NewOrder.TableId" class="form-select" required>
@@ -78,7 +85,6 @@
                             }
                         </select>
                     </div>
-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

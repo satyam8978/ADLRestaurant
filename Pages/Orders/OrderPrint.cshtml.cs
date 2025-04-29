@@ -1,8 +1,9 @@
-using ADLRestaurant.Helpers;
+﻿using ADLRestaurant.Helpers;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc;
 using static ADLRestaurant.Pages.Orders.AddItemsModel;
-
+using iTextSharp.text;
+using iTextSharp.text.pdf;
 namespace ADLRestaurant.Pages.Orders
 {
     public class OrderPrintModel : PageModel
@@ -25,13 +26,89 @@ namespace ADLRestaurant.Pages.Orders
             DbHelper.Init(connectionString);
         }
 
-        public void OnGet(int orderId, int tableId)
+        public IActionResult OnGetDownloadPdf(int orderIds)
         {
-            OrderId = orderId;
-            TableId = tableId;
-            LoadOrderItems(orderId);
-        }
+            OrderId = orderIds;
 
+            // Load your order items here from DB or any service
+            LoadOrderItems(orderIds);
+
+            using var ms = new MemoryStream();
+            var doc = new Document(PageSize.A4, 10, 10, 10, 10);
+            var writer = PdfWriter.GetInstance(doc, ms);
+            writer.CloseStream = false;
+
+            doc.Open();
+
+            var headerFont = FontFactory.GetFont(FontFactory.COURIER_BOLD, 14);
+            var subHeaderFont = FontFactory.GetFont(FontFactory.COURIER_BOLD, 12);
+            var normalFont = FontFactory.GetFont(FontFactory.COURIER, 10);
+            var boldFont = FontFactory.GetFont(FontFactory.COURIER_BOLD, 10);
+
+            doc.Add(new Paragraph("ADL Restaurant", headerFont)
+            {
+                Alignment = Element.ALIGN_CENTER,
+                SpacingAfter = 6
+            });
+
+            doc.Add(new Paragraph("------------------------------", normalFont));
+            doc.Add(new Paragraph($"Order #: {OrderId}", subHeaderFont)
+            {
+                Alignment = Element.ALIGN_CENTER,
+                SpacingAfter = 2
+            });
+
+            doc.Add(new Paragraph($"Date: {DateTime.Now:dd-MM-yyyy HH:mm}", normalFont));
+            doc.Add(new Paragraph(" "));
+
+            PdfPTable table = new(6)
+            {
+                WidthPercentage = 100
+            };
+            table.SetWidths(new float[] { 3, 1, 2, 1, 2, 2 });
+
+            void AddCell(string text, Font font) =>
+                table.AddCell(new PdfPCell(new Phrase(text, font)) { Border = Rectangle.NO_BORDER });
+
+            AddCell("Item", boldFont);
+            AddCell("Qty", boldFont);
+            AddCell("Rate", boldFont);
+            AddCell("GST%", boldFont);
+            AddCell("GST Amt", boldFont);
+            AddCell("Total", boldFont);
+
+            foreach (var item in OrderItems)
+            {
+                AddCell(item.ItemName, normalFont);
+                AddCell(item.Quantity.ToString(), normalFont);
+                AddCell($"₹{item.Rate}", normalFont);
+                AddCell($"{item.GST}%", normalFont);
+                AddCell($"₹{item.GSTAmount}", normalFont);
+                AddCell($"₹{item.TotalAmount}", normalFont);
+            }
+
+            doc.Add(table);
+            doc.Add(new Paragraph(" "));
+
+            doc.Add(new Paragraph($"Grand Total: ₹ {GrandTotal}", boldFont)
+            {
+                Alignment = Element.ALIGN_RIGHT,
+                SpacingBefore = 6
+            });
+
+            doc.Add(new Paragraph("------------------------------", normalFont));
+            doc.Add(new Paragraph("Thank you! Visit Again!", normalFont)
+            {
+                Alignment = Element.ALIGN_CENTER,
+                SpacingBefore = 6
+            });
+
+            doc.Close();
+            ms.Position = 0;
+
+            Response.Headers.Add("Content-Disposition", $"inline; filename=OrderReceipt_{OrderId}.pdf");
+            return File(ms.ToArray(), "application/pdf");
+        }
         private void LoadOrderItems(int id)
         {
             var parameters = new Dictionary<string, object>
