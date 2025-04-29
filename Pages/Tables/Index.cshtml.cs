@@ -12,8 +12,6 @@ namespace ADLRestaurant.Pages.Tables
         public IndexModel(IConfiguration config)
         {
             _config = config;
-
-            // Initialize DbHelper with connection string
             DbHelper.Init(_config.GetConnectionString("DefaultConnection"));
         }
 
@@ -23,86 +21,86 @@ namespace ADLRestaurant.Pages.Tables
             public string TableName { get; set; }
         }
 
+        // Add Table
         [BindProperty]
         public string NewTableName { get; set; }
 
-        public List<TableModel> TableList { get; set; } = new List<TableModel>();
+        // Table List
+        public List<TableModel> TableList { get; set; } = new();
 
-        // Page load - get all tables
+        // Search & Pagination
+        [BindProperty(SupportsGet = true)]
+        public string SearchTerm { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public int PageNumber { get; set; } = 1;
+
+        public int PageSize { get; set; } = 5;
+        public int TotalPages { get; set; }
+        public int CurrentPage => PageNumber;
+        public string PageName => "Index"; // For pagination link reuse
+
         public void OnGet()
         {
             LoadTables();
         }
 
-        // Insert new table
         public IActionResult OnPost()
         {
-            try
-            {
-                if (!string.IsNullOrWhiteSpace(NewTableName))
-                {
-                    var parameters = new Dictionary<string, object>
-                    {
-                        { "@TableName", NewTableName },
-                        { "@ClientId", 1 }, // Sample client/user IDs
-                        { "@UserId", 1 }
-                    };
-
-                    DbHelper.ExecuteNonQuery("sp_InsertTable", parameters);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Log or handle the error (for now, just rethrow)
-                throw new Exception("Error inserting table", ex);
-            }
-
-            return RedirectToPage();
-        }
-
-        // Delete table by ID
-        public IActionResult OnPostDelete(int id)
-        {
-            try
+            if (!string.IsNullOrWhiteSpace(NewTableName))
             {
                 var parameters = new Dictionary<string, object>
                 {
-                    { "@TableId", id }
+                    { "@TableName", NewTableName },
+                    { "@ClientId", 1 },
+                    { "@UserId", 1 }
                 };
 
-                DbHelper.ExecuteNonQuery("sp_DeleteTable", parameters);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Error deleting table", ex);
+                DbHelper.ExecuteNonQuery("sp_InsertTable", parameters);
             }
 
-            return RedirectToPage();
+            return RedirectToPage(new { searchTerm = SearchTerm, pageNumber = PageNumber });
         }
 
-        // Load all tables from DB
+        public IActionResult OnPostDelete(int id)
+        {
+            DbHelper.ExecuteNonQuery("sp_DeleteTable", new Dictionary<string, object> { { "@TableId", id } });
+            return RedirectToPage(new { searchTerm = SearchTerm, pageNumber = PageNumber });
+        }
+
         private void LoadTables()
         {
-            try
-            {
-                var reader = DbHelper.ExecuteReader("sp_GetTables", null);
+            var reader = DbHelper.ExecuteReader("sp_GetTables", null);
+            var allTables = new List<TableModel>();
 
-                using (reader)
+            using (reader)
+            {
+                while (reader.Read())
                 {
-                    while (reader.Read())
+                    allTables.Add(new TableModel
                     {
-                        TableList.Add(new TableModel
-                        {
-                            TableId = Convert.ToInt32(reader["TableId"]),
-                            TableName = reader["TableName"].ToString()
-                        });
-                    }
+                        TableId = Convert.ToInt32(reader["TableId"]),
+                        TableName = reader["TableName"].ToString()
+                    });
                 }
             }
-            catch (Exception ex)
+
+            // Search filter
+            if (!string.IsNullOrWhiteSpace(SearchTerm))
             {
-                throw new Exception("Error loading tables", ex);
+                allTables = allTables
+                    .Where(t => t.TableName.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
             }
+
+            // Pagination
+            int totalCount = allTables.Count;
+            TotalPages = (int)Math.Ceiling(totalCount / (double)PageSize);
+
+            TableList = allTables
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
         }
     }
 }

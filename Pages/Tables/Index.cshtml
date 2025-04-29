@@ -1,41 +1,87 @@
 ﻿@page
 @model ADLRestaurant.Pages.Tables.IndexModel
 @{
-    Layout = "_Layout";
     ViewData["Title"] = "Manage Tables";
 }
 
-<h2 class="mb-3">Manage Tables</h2>
+<div class="container mt-4">
+    <h2 class="text-center mb-4">Manage Tables</h2>
 
-<!-- Add New Table -->
-<form method="post" class="row g-3 mb-4">
-    <div class="col-md-6">
-        <input asp-for="NewTableName" class="form-control" placeholder="Enter table name" required />
+    <!-- Add Table Button -->
+    <div class="text-end mb-3">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addTableModal">
+            + Add Table
+        </button>
     </div>
-    <div class="col-md-2">
-        <button type="submit" class="btn btn-success">Add Table</button>
-    </div>
-</form>
 
-<!-- Show Table List -->
-<table class="table table-bordered table-striped">
-    <thead class="table-dark">
-        <tr>
-            <th>Table Name</th>
-            <th style="width: 100px;">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var t in Model.TableList)
-        {
-            <tr>
-                <td>@t.TableName</td>
-                <td>
-                    <form method="post" asp-page-handler="Delete" asp-route-id="@t.TableId" onsubmit="return confirm('Are you sure to delete?');">
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+    <!-- Search Filter -->
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Search table..." />
+            <button type="submit" class="btn btn-outline-secondary">Search</button>
+        </div>
+    </form>
+
+    @if (Model.TableList != null && Model.TableList.Any())
+    {
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Table Name</th>
+                    <th class="text-start">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var table in Model.TableList)
+                {
+                    <tr>
+                        <td>@table.TableName</td>
+                        <td class="text-start">
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@table.TableId" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this table?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <!-- Pagination -->
+        <nav>
+            <ul class="pagination justify-content-center">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <a class="btn btn-sm @(i == Model.CurrentPage ? "btn-primary" : "btn-outline-primary")"
+                       href="?PageNumber=@i&SearchTerm=@Model.SearchTerm">
+                        @i
+                    </a>
+                }
+            </ul>
+        </nav>
+    }
+    else
+    {
+        <div class="alert alert-info">No tables found.</div>
+    }
+</div>
+
+<!-- Add Table Modal -->
+<div class="modal fade" id="addTableModal" tabindex="-1" aria-labelledby="addTableLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addTableLabel">Add New Table</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" asp-for="NewTableName" placeholder="Enter table name..." required />
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Add Table</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
