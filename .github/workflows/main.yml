@@ -7,7 +7,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: windows-latest
-    environment: dev 
+    environment: dev
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -15,7 +16,7 @@ jobs:
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x' # adjust to your version
+        dotnet-version: '8.0.x'
 
     - name: Restore dependencies
       run: dotnet restore
@@ -31,20 +32,7 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./publish/
         server-dir: /rbill.adlsoftcodes.com/
+        delete: true  # this will clean the server folder before uploading
 
-    - name: Send Email Notification
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 587
-        username: ${{ secrets.EMAIL_USERNAME }}
-        password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: Deployment Success:AdlSoftCodes
-        to: satyam0297@gmail.com
-        from: AdlSoftCodes <${{ secrets.EMAIL_USERNAME }}>
-        body: |
-          ✅ Your site (rbill.adlsoftcodes.com) was successfully deployed.
-          - Date: ${{ steps.date.outputs.date }}
-          - Repo: ${{ github.repository }}
-          - Commit: ${{ github.sha }}
-
+    - name: Deployment complete
+      run: echo "✅ Deployment to FTP completed successfully!"
