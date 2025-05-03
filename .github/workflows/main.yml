@@ -29,7 +29,7 @@ jobs:
         server: 190.92.174.109
         username: satyam
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./publish
+        local-dir: ./publish/
         server-dir: /rbill.adlsoftcodes.com/
 
     - name: Send Email Notification
