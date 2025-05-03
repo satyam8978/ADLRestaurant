@@ -1,5 +1,5 @@
 ﻿@page
-@model ADLRestaurant.Pages.RegistrationModel
+@model ADLRestaurant.Pages.RegisterModel
 @{
     Layout = null;
     ViewData["Title"] = "Restaurant Registration";
@@ -17,7 +17,6 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
     <style>
-        /* Set the background image */
         body {
             background-image: url(https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg);
             background-size: cover;
@@ -94,7 +93,7 @@
 <body>
     <div class="container mt-5">
         <div class="row">
-            <!-- Sidebar with instructions -->
+            <!-- Sidebar -->
             <div class="col-md-4">
                 <div class="sidebar">
                     <h5>How Registration Works</h5>
@@ -105,7 +104,7 @@
                         <li><strong>Step 4:</strong> Use the Restaurant ID and default password to log in. A popup will prompt you to change your password.</li>
                         <li><strong>Step 5:</strong> After changing your password, you’ll automatically receive a 15-day free trial.</li>
                         <li><strong>Step 6:</strong> Explore all features during the trial period.</li>
-                        <li><strong>Step 7:</strong> After the trial,  choose a subscription plan to continue using the platform.</li>
+                        <li><strong>Step 7:</strong> After the trial, choose a subscription plan to continue using the platform.</li>
                     </ul>
                 </div>
             </div>
@@ -113,49 +112,43 @@
             <!-- Registration Form -->
             <div class="col-md-8">
                 <div class="card">
-                    <div class="card-header text-center">
-                        <h3>Restaurant Registration</h3>
-                        <p class="mb-0">Welcome to ADL Soft Codes. Let's get your restaurant onboard!</p>
+                    <div class="card-header">
+                        <h3>Register Restaurant</h3>
                     </div>
                     <div class="card-body">
                         <form method="post">
-                            <!-- Owner Name -->
                             <div class="form-group">
-                                <label for="OwnerName">Owner Name</label>
-                                <input type="text" class="form-control" id="OwnerName" name="OwnerName" required placeholder="Enter owner name">
+                                <label asp-for="Input.RestaurantName"></label>
+                                <input asp-for="Input.RestaurantName" class="form-control" />
                             </div>
-
-                            <!-- Email -->
                             <div class="form-group">
-                                <label for="Email">Email Address</label>
-                                <input type="email" class="form-control" id="Email" name="Email" required placeholder="Enter email for login and verification">
+                                <label asp-for="Input.OwnerName"></label>
+                                <input asp-for="Input.OwnerName" class="form-control" />
                             </div>
-
-                            <!-- Mobile Number -->
                             <div class="form-group">
-                                <label for="MobileNumber">Mobile Number</label>
-                                <input type="text" class="form-control" id="MobileNumber" name="MobileNumber" required placeholder="Enter your mobile number">
+                                <label asp-for="Input.Email"></label>
+                                <input asp-for="Input.Email" type="email" class="form-control" />
                             </div>
-
-                            <!-- Restaurant Name -->
                             <div class="form-group">
-                                <label for="RestaurantName">Restaurant Name</label>
-                                <input type="text" class="form-control" id="RestaurantName" name="RestaurantName" required placeholder="Enter restaurant name">
+                                <label asp-for="Input.MobileNumber"></label>
+                                <input asp-for="Input.MobileNumber" class="form-control" />
                             </div>
-
-                            <!-- Plan Selection (Hidden for now) -->
-                            <input type="hidden" name="Plan" value="Trial">
-                            <input type="hidden" name="SubscriptionStartDate" value="@DateTime.Now">
-                            <input type="hidden" name="SubscriptionEndDate" value="@DateTime.Now.AddDays(15)">
-
-                            <!-- Submit Button -->
-                            <div class="d-flex justify-content-center mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg">Register Now</button>
-                            </div>
+                            <button type="submit" class="btn btn-primary">Register</button>
                         </form>
-                    </div>
-                    <div class="card-footer text-muted">
-                        <p>By registering, you agree to our <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</p>
+
+                        @if (Model.GeneratedPassword != null)
+                        {
+                            <div class="alert alert-success mt-3">
+                                <strong>Success!</strong> Your restaurant has been registered with Restaurant ID: <strong>@Model.RestaurantUniqueId</strong>.<br />
+                                <strong>Password:</strong> @Model.GeneratedPassword
+                            </div>
+                        }
+                        else if (Model.ErrorMessage != null)
+                        {
+                            <div class="alert alert-danger mt-3">
+                                <strong>Error:</strong> @Model.ErrorMessage
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
