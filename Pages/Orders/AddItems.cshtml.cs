@@ -44,9 +44,18 @@ namespace ADLRestaurant.Pages.Orders
         public int OrderId { get; set; }
         [BindProperty]
         public int TableId { get; set; }
+        [BindProperty]
+        public string PaymentMode { get; set; }
+
+        [BindProperty]
+        public decimal GrandTotal { get; set; }
+
+        [BindProperty]
+    
+
         public List<ItemModel> AvailableItems { get; set; } = new();
         public List<OrderItemModel> OrderItems { get; set; } = new();
-        public decimal GrandTotal { get; set; }
+      
 
         [BindProperty]
         public int SelectedItemId { get; set; }
@@ -207,6 +216,41 @@ namespace ADLRestaurant.Pages.Orders
                 }
             }
         }
+
+        public IActionResult OnPostMakePayment()
+        {
+            var parameters = new Dictionary<string, object>
+    {
+        { "@OrderId", OrderId },
+        { "@TotalAmount", GrandTotal },
+        { "@PaymentMethod", PaymentMode },
+        { "@PaidAmount", GrandTotal },  // assuming full paid for now
+        { "@ClientId", 1 },
+        { "@UserId", 1 },
+        { "@CreatedDate", DateTime.Now }
+    };
+
+            var result = DbHelper.ExecuteReader("sp_CompleteOrderWithPayment", parameters);
+
+            // Check if result is valid or payment succeeded
+            bool paymentSuccess = result != null && result.HasRows;
+
+            if (paymentSuccess)
+            {
+                TempData["PaymentMessage"] = "Payment successful! Redirecting to print page...";
+
+                // Redirect to the PDF generation page (will open in a new tab by default)
+                return RedirectToPage("/Orders/OrderPrint",new { handler = "DownloadPdf", orderIds = OrderId });
+            }
+            else
+            {
+                // Show failure message
+                TempData["PaymentMessage"] = "Payment failed! Please try again.";
+                // Return to the current page to show the error
+                return RedirectToPage("/Orders/AddItems", new { id = OrderId, tableId = TableId });
+            }
+        }
+
 
     }
 }
