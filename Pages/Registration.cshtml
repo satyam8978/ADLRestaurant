@@ -136,12 +136,13 @@
                             <button type="submit" class="btn btn-primary">Register</button>
                         </form>
 
-                        @if (Model.GeneratedPassword != null)
+                        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
                         {
-                            <div class="alert alert-success mt-3">
-                                <strong>Success!</strong> Your restaurant has been registered with Restaurant ID: <strong>@Model.RestaurantUniqueId</strong>.<br />
-                                <strong>Password:</strong> @Model.GeneratedPassword
-                            </div>
+                            <script>
+                                window.onload = function () {
+                                    alert("@Model.SuccessMessage");
+                                };
+                            </script>
                         }
                         else if (Model.ErrorMessage != null)
                         {

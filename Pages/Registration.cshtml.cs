@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ADLRestaurant.Helpers;
 using System.Data;
+using System.Data.SqlClient;
 
 namespace ADLRestaurant.Pages
 {
@@ -9,6 +10,7 @@ namespace ADLRestaurant.Pages
     {
         private readonly IConfiguration _config;
         private readonly EmailHelper _emailHelper;
+
         public RegisterModel(IConfiguration config, EmailHelper emailHelper)
         {
             _config = config;
@@ -26,16 +28,20 @@ namespace ADLRestaurant.Pages
 
         public class RestaurantInput
         {
-            public string RestaurantName { get; set; } = "";
-            public string OwnerName { get; set; } = "";
-            public string Email { get; set; } = "";
-            public string MobileNumber { get; set; } = "";
+            public string RestaurantName { get; set; } = "ADL Restaurant";
+            public string OwnerName { get; set; } = "Satyan";
+            public string Email { get; set; } = "satyam0297@gmail.com";
+            public string MobileNumber { get; set; } = "8978970939";
         }
 
         public IActionResult OnPost()
         {
+            SqlDataReader? reader = null;
+            SqlDataReader? pinReader = null;
+
             try
             {
+                // Step 1: Register Restaurant
                 var parameters = new Dictionary<string, object>
                 {
                     { "@RestaurantName", Input.RestaurantName },
@@ -44,14 +50,55 @@ namespace ADLRestaurant.Pages
                     { "@MobileNumber", Input.MobileNumber }
                 };
 
-                var reader = DbHelper.ExecuteReader("sp_InsertRestaurant", parameters);
+                reader = DbHelper.ExecuteReader("sp_InsertRestaurant", parameters);
                 if (reader.Read())
                 {
-                    GeneratedPassword = reader["GeneratedPassword"].ToString();
+                    // Step 2: Read restaurant values
                     RestaurantUniqueId = reader["RestaurantUniqueId"].ToString();
-                    SuccessMessage = "Restaurant registered successfully.";
-                    // Send welcome email
-                    _emailHelper.SendWelcomeEmail(Input.Email, RestaurantUniqueId, GeneratedPassword);
+                    int restaurantId = Convert.ToInt32(reader["RestaurantId"]);
+
+                    reader.Close(); // Close previous reader before new command
+
+                    // Step 3: Insert Owner into Users table and capture UID
+                    string userUid = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
+
+
+                    var userParams = new Dictionary<string, object>
+{
+    { "@RestaurantId", RestaurantUniqueId },
+    { "@Name", Input.OwnerName },
+    { "@MobileNumber", Input.MobileNumber },
+    { "@Address", "N/A" },
+    { "@Role", 1 },
+    { "@Status", 1 },
+    { "@CreatedBy", 0 }
+  
+};
+
+                    var userReader = DbHelper.ExecuteReader("InsertUser", userParams);
+                    string userId = userUid; // fallback
+                    if (userReader.Read())
+                    {
+                        userId = userReader["Uid"].ToString();
+                    }
+                    userReader.Close();
+
+                    // Step 4: Generate PIN
+                    pinReader = DbHelper.ExecuteReader("GenerateLoginPinForUser", new Dictionary<string, object>
+                    {
+                        { "@UserId", userId }
+                    });
+
+                    string? loginPin = null;
+                    if (pinReader.Read())
+                    {
+                        loginPin = pinReader["Pin"].ToString();
+                    }
+
+                    // Step 5: Send Email
+                    _emailHelper.SendWelcomeEmail(Input.Email, RestaurantUniqueId, userId, loginPin);
+
+                    SuccessMessage = "Registration successful. Login details sent to your email.";
                 }
                 else
                 {
@@ -61,6 +108,11 @@ namespace ADLRestaurant.Pages
             catch (Exception ex)
             {
                 ErrorMessage = "Error: " + ex.Message;
+            }
+            finally
+            {
+                reader?.Close();
+                pinReader?.Close();
             }
 
             return Page();

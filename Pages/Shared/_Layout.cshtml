@@ -1,6 +1,10 @@
 ﻿@{
     Layout = null;
+    // Fetch the UserId from the session
+    var userId = Context.Session.GetString("UserId");
+    var userName = string.IsNullOrEmpty(userId) ? "Admin" : userId; // Default to "Admin" if no userId is found
 }
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,7 +50,8 @@
                 <div class="container-fluid justify-content-between">
                     <span class="navbar-brand h5 mb-0">ADL Restaurant</span>
                     <div class="d-flex align-items-center">
-                        <span class="me-3">Welcome, <strong>Admin</strong></span>
+                        <!-- Display User ID -->
+                        <span class="me-3">Welcome, <strong>@userName</strong></span>
                         <a class="btn btn-sm btn-outline-danger" href="#"><i class="fa fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>

@@ -39,7 +39,7 @@ namespace ADLRestaurant.Helpers
                 smtp.Disconnect(true);
             }
         }
-        public string SendWelcomeEmail(string toEmail, string restaurantId, string password)
+        public string SendWelcomeEmail(string toEmail, string restaurantId,string userid, string pin)
         {
             try
             {
@@ -59,7 +59,8 @@ namespace ADLRestaurant.Helpers
                     <h3>Welcome to ADLSoftTCodes!</h3>
                     <p>Your restaurant has been successfully registered.</p>
                     <p><strong>Restaurant ID:</strong> {restaurantId}</p>
-                    <p><strong>Password:</strong> {password}</p>
+                      <p><strong>User ID:</strong> {userid}</p>
+                    <p><strong>Login Pin:</strong> {pin}</p>
                     <p>Please log in and change your password immediately.</p>
                     <br/>
                     <p>Regards,<br/>ADLSoftTCodes Team</p>"
