@@ -5,14 +5,15 @@ using ADLRestaurant.Helpers;
 
 namespace ADLRestaurant.Pages.Tables
 {
-    public class IndexModel : PageModel
+    public class IndexModel : UserDetails
     {
         private readonly IConfiguration _config;
-
-        public IndexModel(IConfiguration config)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public IndexModel(IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
             _config = config;
             DbHelper.Init(_config.GetConnectionString("DefaultConnection"));
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public class TableModel
@@ -49,11 +50,16 @@ namespace ADLRestaurant.Pages.Tables
         {
             if (!string.IsNullOrWhiteSpace(NewTableName))
             {
+
+                // Retrieve OrderId and UserId from session if already set
+               
+             LoadUserDetails();
+
                 var parameters = new Dictionary<string, object>
                 {
                     { "@TableName", NewTableName },
-                    { "@ClientId", 1 },
-                    { "@UserId", 1 }
+                    { "@ClientId",clientid },
+                    { "@UserId", userid }
                 };
 
                 DbHelper.ExecuteNonQuery("sp_InsertTable", parameters);
@@ -70,7 +76,13 @@ namespace ADLRestaurant.Pages.Tables
 
         private void LoadTables()
         {
-            var reader = DbHelper.ExecuteReader("sp_GetTables", null);
+            LoadUserDetails();
+            var parameters = new Dictionary<string, object>
+                {
+                   
+                    { "@ClientId",clientid },
+                };
+            var reader = DbHelper.ExecuteReader("sp_GetTables", parameters);
             var allTables = new List<TableModel>();
 
             using (reader)

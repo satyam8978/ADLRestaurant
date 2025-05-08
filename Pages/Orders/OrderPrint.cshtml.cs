@@ -9,13 +9,13 @@ namespace ADLRestaurant.Pages.Orders
     public class OrderPrintModel : PageModel
     {
         private readonly IConfiguration _config;
-
+        private readonly IHttpContextAccessor _httpContextAccessor;
         public int OrderId { get; set; }
         public int TableId { get; set; }
         public List<OrderItemModel> OrderItems { get; set; } = new();
         public decimal GrandTotal { get; set; }
 
-        public OrderPrintModel(IConfiguration config)
+        public OrderPrintModel(IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
             _config = config;
             string? connectionString = _config.GetConnectionString("DefaultConnection");
@@ -24,6 +24,7 @@ namespace ADLRestaurant.Pages.Orders
                 throw new ArgumentNullException(nameof(connectionString), "Connection string cannot be null or empty.");
             }
             DbHelper.Init(connectionString);
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public IActionResult OnGetDownloadPdf(int orderIds)
@@ -111,10 +112,13 @@ namespace ADLRestaurant.Pages.Orders
         }
         private void LoadOrderItems(int id)
         {
+            var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId");
             var parameters = new Dictionary<string, object>
             {
-                { "@OrderId", id }
+                { "@OrderId", OrderId },
+                   { "@Clientid", rid }
             };
+
 
             var reader = DbHelper.ExecuteReader("sp_GetOrderItems", parameters);
             OrderItems.Clear();

@@ -4,14 +4,16 @@ using ADLRestaurant.Helpers;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using static iTextSharp.text.pdf.AcroFields;
 
 namespace ADLRestaurant.Pages.Orders
 {
-    public class AddItemsModel : PageModel
+    public class AddItemsModel : UserDetails
     {
         private readonly IConfiguration _config;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AddItemsModel(IConfiguration config)
+        public AddItemsModel(IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
             _config = config;
             string? connectionString = _config.GetConnectionString("DefaultConnection");
@@ -20,6 +22,7 @@ namespace ADLRestaurant.Pages.Orders
                 throw new ArgumentNullException(nameof(connectionString), "Connection string cannot be null or empty.");
             }
             DbHelper.Init(connectionString);
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public class ItemModel
@@ -73,11 +76,18 @@ namespace ADLRestaurant.Pages.Orders
 
         public IActionResult OnPost(int id)
         {
-            OrderId = id;
+            OrderId = _httpContextAccessor.HttpContext?.Session.GetInt32("OrderId") ?? 0;
+            var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId");
+            OrderId = OrderId;
+            LoadUserDetails();
+            var parameterss = new Dictionary<string, object>
+                {
 
+                    { "@ClientId",clientid },
+                };
             if (SelectedItemId > 0 && Quantity > 0)
             {
-                var reader = DbHelper.ExecuteReader("sp_GetItems", null);
+                var reader = DbHelper.ExecuteReader("sp_GetItems", parameterss);
                 using (reader)
                 {
                     while (reader.Read())
@@ -105,8 +115,8 @@ namespace ADLRestaurant.Pages.Orders
                         { "@Rate", rate },
                         { "@GST", gst },
                         { "@Amount", totalAmount },
-                        { "@ClientId", 1 },
-                        { "@UserId", 1 }
+                        { "@ClientId", clientid },
+                        { "@UserId",userid }
                     };
 
                             DbHelper.ExecuteScalar("sp_InsertOrderItem", parameters);
@@ -154,7 +164,13 @@ namespace ADLRestaurant.Pages.Orders
         }
         private void LoadAvailableItems()
         {
-            var reader = DbHelper.ExecuteReader("sp_GetItems", null);
+           LoadUserDetails();
+            var parameters = new Dictionary<string, object>
+            {
+                        { "@clientid", clientid }, // Ensure this is set in the Edit modal
+                        
+                    };
+            var reader = DbHelper.ExecuteReader("sp_GetItems", parameters);
             AvailableItems.Clear();
 
             using (reader)
@@ -174,9 +190,12 @@ namespace ADLRestaurant.Pages.Orders
 
         private void LoadOrderItems()
         {
+            OrderId = _httpContextAccessor.HttpContext?.Session.GetInt32("OrderId") ?? 0;
+            var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId");
             var parameters = new Dictionary<string, object>
             {
-                { "@OrderId", OrderId }
+                { "@OrderId", OrderId },
+                   { "@Clientid", rid }
             };
 
             var reader = DbHelper.ExecuteReader("sp_GetOrderItems", parameters);
@@ -219,14 +238,16 @@ namespace ADLRestaurant.Pages.Orders
 
         public IActionResult OnPostMakePayment()
         {
+            var userId = _httpContextAccessor.HttpContext?.Session.GetString("UserId"); // Get UserId from session
+            var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId"); // Get RestaurantId from session
             var parameters = new Dictionary<string, object>
     {
         { "@OrderId", OrderId },
         { "@TotalAmount", GrandTotal },
         { "@PaymentMethod", PaymentMode },
         { "@PaidAmount", GrandTotal },  // assuming full paid for now
-        { "@ClientId", 1 },
-        { "@UserId", 1 },
+        { "@ClientId",rid },
+        { "@UserId", userId },
         { "@CreatedDate", DateTime.Now }
     };
 

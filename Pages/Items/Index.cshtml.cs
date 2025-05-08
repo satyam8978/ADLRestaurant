@@ -7,14 +7,15 @@ using System;
 
 namespace ADLRestaurant.Pages.Items
 {
-    public class IndexModel : PageModel
+    public class IndexModel : UserDetails
     {
         private readonly IConfiguration _config;
-
-        public IndexModel(IConfiguration config)
+      private readonly IHttpContextAccessor _httpContextAccessor;
+        public IndexModel(IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
             _config = config;
             DbHelper.Init(_config.GetConnectionString("DefaultConnection"));
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public class ItemModel
@@ -52,6 +53,8 @@ namespace ADLRestaurant.Pages.Items
 
         public IActionResult OnPost()
         {
+            var userId = _httpContextAccessor.HttpContext?.Session.GetString("UserId");
+            var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId");
             if (!string.IsNullOrWhiteSpace(NewItemName))
             {
                 var parameters = new Dictionary<string, object>
@@ -59,8 +62,8 @@ namespace ADLRestaurant.Pages.Items
                     { "@ItemName", NewItemName },
                     { "@Price", NewPrice },
                     { "@GST", NewGST },
-                    { "@ClientId", 1 },
-                    { "@UserId", 1 }
+                    { "@ClientId", rid},
+                    { "@UserId", userId }
                 };
 
                 DbHelper.ExecuteNonQuery("sp_InsertItem", parameters);
@@ -97,7 +100,13 @@ namespace ADLRestaurant.Pages.Items
 
         private void LoadItems()
         {
-            var reader = DbHelper.ExecuteReader("sp_GetItems", null);
+            LoadUserDetails();
+            var parameters = new Dictionary<string, object>
+                    {
+                        { "@clientid", clientid }, // Ensure this is set in the Edit modal
+                        
+                    };
+            var reader = DbHelper.ExecuteReader("sp_GetItems", parameters);
             var allItems = new List<ItemModel>();
 
             using (reader)

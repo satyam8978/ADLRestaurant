@@ -17,7 +17,7 @@ public class SessionAuthFilter : IPageFilter
         var routeData = context.RouteData.Values["page"]?.ToString();
 
         // If the current page is login or register, skip session check
-        if (routeData == "/Login" || routeData == "/Register")
+        if (routeData == "/Login" || routeData == "/Registration")
         {
             return;
         }

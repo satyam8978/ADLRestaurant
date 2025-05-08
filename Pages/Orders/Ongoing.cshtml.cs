@@ -9,16 +9,17 @@ using iTextSharp.text;
 
 namespace ADLRestaurant.Pages.Orders
 {
-    public class OngoingModel : PageModel
+    public class OngoingModel : UserDetails
     {
         private readonly IConfiguration _config;
-        
-      
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public OngoingModel(IConfiguration config)
+
+        public OngoingModel(IConfiguration config, IHttpContextAccessor httpContextAccessor)
         {
             _config = config;
             DbHelper.Init(_config.GetConnectionString("DefaultConnection"));
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public class OrderModel
@@ -28,6 +29,7 @@ namespace ADLRestaurant.Pages.Orders
             public string TableName { get; set; }
             public decimal TotalAmount { get; set; }
             public DateTime CreatedDate { get; set; }
+           
         }
 
         public class TableModel
@@ -53,14 +55,15 @@ namespace ADLRestaurant.Pages.Orders
            
             if (NewOrder.TableId > 0)
             {
+                var userId = _httpContextAccessor.HttpContext?.Session.GetString("UserId"); // Get UserId from session
+                var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId"); // Get RestaurantId from session
+
                 var parameters = new Dictionary<string, object>
                 {
+                    { "@rid", rid },
+                    { "@UserId", userId },
                     { "@TableId", NewOrder.TableId },
-                    { "@TotalAmount", 0 },  // New order starts with 0 total
-                    { "@ClientId", 1 },
-                    { "@UserId", 1 }
                 };
-
                 DbHelper.ExecuteNonQuery("sp_InsertOrder", parameters);
             }
 
@@ -81,7 +84,13 @@ namespace ADLRestaurant.Pages.Orders
 
         private void LoadOngoingOrders()
         {
-            var reader = DbHelper.ExecuteReader("sp_GetOngoingOrders", null);
+            var rid = _httpContextAccessor.HttpContext?.Session.GetString("RestaurantId");
+            var parameters = new Dictionary<string, object>
+                {
+                    { "@rid", rid },
+                   
+                };
+            var reader = DbHelper.ExecuteReader("sp_GetOngoingOrders", parameters);
             using (reader)
             {
                 while (reader.Read())
@@ -100,7 +109,13 @@ namespace ADLRestaurant.Pages.Orders
 
         private void LoadAvailableTables()
         {
-            var reader = DbHelper.ExecuteReader("sp_GetTables", null);
+            LoadUserDetails();
+            var parameters = new Dictionary<string, object>
+                {
+
+                    { "@ClientId",clientid },
+                };
+            var reader = DbHelper.ExecuteReader("sp_GetTables", parameters);
             using (reader)
             {
                 while (reader.Read())
@@ -120,6 +135,13 @@ namespace ADLRestaurant.Pages.Orders
             var table = AvailableTables.FirstOrDefault(t => t.TableId == id);
             return table?.TableName ?? "Unknown";
         }
-        
+        public IActionResult OnPostGoToAddItems(int orderId, string tableId)
+        {
+            _httpContextAccessor.HttpContext?.Session.SetInt32("OrderId", orderId);
+            _httpContextAccessor.HttpContext?.Session.SetString("TableId", tableId);
+
+            return RedirectToPage("/Orders/AddItems");
+        }
+
     }
 }

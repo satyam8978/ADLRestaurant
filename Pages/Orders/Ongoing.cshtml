@@ -19,7 +19,9 @@
             @foreach (var order in Model.OngoingOrders)
             {
                 <div class="col-md-4">
-                    <div class="card shadow rounded-4 border-0 h-100" style="background-color: #f8f9fa; cursor: pointer;"
+                    <form method="post" asp-page-handler="GoToAddItems" asp-route-orderId="@order.OrderId" asp-route-tableId="@order.tableid" style="display:inline;">
+    <button type="submit" class="card shadow rounded-4 border-0 h-100 btn w-100 text-start"
+            style="background-color: #f8f9fa; cursor: pointer;"><div class="card shadow rounded-4 border-0 h-100" style="background-color: #f8f9fa; cursor: pointer;"
                          onclick="window.location.href='@Url.Page("/Orders/AddItems", new { id = order.OrderId, tableId = order.tableid })'">
                         <div class="card-body d-flex flex-column">
                             <h4 class="card-title text-center fw-bold mb-3">@order.TableName</h4>
@@ -53,6 +55,8 @@
                             </div>
                         </div>
                     </div>
+                    </form>
+
                 </div>
             }
         </div>

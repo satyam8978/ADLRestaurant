@@ -1,24 +1,28 @@
-using ADLRestaurant.Helpers;
+﻿using ADLRestaurant.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorPages();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<EmailHelper>();
 
-// Register the Session Auth Filter globally
-builder.Services.AddControllersWithViews(options =>
+builder.Services.AddRazorPages(options =>
 {
-    options.Filters.Add(new SessionAuthFilter()); // Add your filter here
+    // Register session auth filter for all Razor Pages except Login/Register
+    options.Conventions.AddFolderApplicationModelConvention("/", model =>
+    {
+        model.Filters.Add(new SessionAuthFilter());
+    });
 });
 
 // Enable session
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromDays(1); // Set session timeout to 1 day
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout to 1 day
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 var app = builder.Build();
@@ -28,12 +32,11 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
 }
-app.UseStaticFiles();
 
+app.UseStaticFiles();
 app.UseRouting();
 
-// Enable session middleware before authorization
-app.UseSession(); // Enable session middleware
+app.UseSession(); // 👈 Important: must be before Razor Pages
 
 app.UseAuthorization();
 
