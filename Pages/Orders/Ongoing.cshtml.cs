@@ -2,10 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ADLRestaurant.Helpers;
 using System.Data;
-using iText.Layout.Borders;
-using iText.Layout.Element;
-using iTextSharp.text.pdf;
-using iTextSharp.text;
+
 
 namespace ADLRestaurant.Pages.Orders
 {
